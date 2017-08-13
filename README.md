@@ -9,11 +9,12 @@
     This tool Generate Shellcodes with metasploit,using web delivery and bypass applocker technic 
 
 ## Dependencies :
-  1 - metasploit-framework
+    1 - metasploit-framework
 	2 - xterm
 	3 - Zenity
-	4 - Monodevelop-MCS
+	4 - Monodevelop/MCS
 
+	
 ## Download/Config/Usage:
     1? - Download the tool from github
          git clone https://github.com/M4sc3r4n0/deliver.git
